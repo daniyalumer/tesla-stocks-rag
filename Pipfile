@@ -1,0 +1,20 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+requests = "*"
+selenium = "*"
+bs4 = "*"
+pypdf2 = "*"
+elasticsearch = "*"
+huggingface-hub = "*"
+numpy = "*"
+tenacity = "*"
+sentence-transformers = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.12"
