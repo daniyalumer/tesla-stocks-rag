@@ -5,8 +5,8 @@ import logging
 import datetime
 from tqdm import tqdm
 from dotenv import load_dotenv
-from huggingface_hub import InferenceClient
-from tenacity import retry, stop_after_attempt, wait_exponential
+from sentence_transformers import SentenceTransformer
+import numpy as np
 
 # Configure logging
 logging.basicConfig(
@@ -14,25 +14,18 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
-# Load environment variables
-load_dotenv()
+# Initialize the model
+model = SentenceTransformer('all-MiniLM-L6-v2')
 
-# Initialize HuggingFace client
-client = InferenceClient(token=os.getenv('HF_TOKEN'))
-MODEL_ID = "sentence-transformers/all-MiniLM-L6-v2"  # Changed model
-
-@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
 def get_embedding(text):
-    """Get embedding using HuggingFace Inference API with retries"""
+    """Get embedding using SentenceTransformer locally"""
     try:
-        response = client.feature_extraction(
-            text,
-            model=MODEL_ID
-        )
-        return response
+        # Generate embedding
+        embedding = model.encode(text, normalize_embeddings=True)
+        return embedding
     except Exception as e:
         logging.error(f"Error getting embedding: {str(e)}")
-        raise  # Raise the error to trigger retry
+        return None
 
 def read_pdf(file_path):
     """Extract text from PDF file"""
@@ -44,7 +37,7 @@ def read_pdf(file_path):
                 text += page.extract_text() + ' '
         return text.strip()
     except Exception as e:
-        print(f"Error reading PDF {file_path}: {str(e)}")
+        logging.error(f"Error reading PDF {file_path}: {str(e)}")
         return None
 
 def create_chunks(text, chunk_size=1000):
@@ -78,7 +71,7 @@ def process_and_store_documents():
     
     # Ensure directories exist
     if not os.path.exists(pdf_dir):
-        print(f"Directory {pdf_dir} does not exist!")
+        logging.error(f"Directory {pdf_dir} does not exist!")
         return
         
     os.makedirs(embeddings_dir, exist_ok=True)
@@ -91,7 +84,7 @@ def process_and_store_documents():
         
         # Skip if already processed
         if os.path.exists(output_path):
-            print(f"Skipping {filename} - already processed")
+            logging.info(f"Skipping {filename} - already processed")
             continue
             
         # Extract text from PDF
@@ -101,19 +94,21 @@ def process_and_store_documents():
         
         # Create chunks
         chunks = create_chunks(text)
-        print(f"Created {len(chunks)} chunks from {filename}")
+        logging.info(f"Created {len(chunks)} chunks from {filename}")
         
         # Store chunks and their embeddings
         documents = []
         for i, chunk in enumerate(chunks):
             try:
-                # Generate embedding with retry logic
+                # Generate embedding
                 embedding = get_embedding(chunk)
+                if embedding is None:
+                    continue
                 
                 # Prepare document
                 doc = {
                     "content": chunk,
-                    "embedding": embedding.tolist(),  # Convert numpy array to list
+                    "embedding": embedding.tolist(),
                     "file_name": filename,
                     "chunk_index": i,
                     "processed_date": datetime.datetime.now().isoformat()
@@ -121,7 +116,7 @@ def process_and_store_documents():
                 documents.append(doc)
                 
             except Exception as e:
-                print(f"Failed to process chunk {i} from {filename}: {str(e)}")
+                logging.error(f"Failed to process chunk {i} from {filename}: {str(e)}")
                 continue
         
         # Save to JSON file
@@ -129,6 +124,9 @@ def process_and_store_documents():
             try:
                 with open(output_path, 'w') as f:
                     json.dump(documents, f)
-                print(f"Saved {len(documents)} embeddings for {filename}")
+                logging.info(f"Saved {len(documents)} embeddings for {filename}")
             except Exception as e:
-                print(f"Error saving embeddings for {filename}: {str(e)}")
+                logging.error(f"Error saving embeddings for {filename}: {str(e)}")
+
+if __name__ == "__main__":
+    process_and_store_documents()
