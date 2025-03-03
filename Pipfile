@@ -12,7 +12,6 @@ elasticsearch = "*"
 huggingface-hub = "*"
 numpy = "*"
 tenacity = "*"
-sentence-transformers = "*"
 
 [dev-packages]
 

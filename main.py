@@ -2,7 +2,8 @@ import os
 from dotenv import load_dotenv
 from scrape import scrape_tesla_sec_filings
 from embeddings import process_and_store_documents
-from elastic_ingest import ingest_embeddings
+from elastic_ingest import ingest_embeddings, create_es_client, ElasticsearchIngestor
+from search import SearchEngine
 import logging
 
 # Configure logging
@@ -24,31 +25,67 @@ def main():
         logging.error(f"Missing required environment variables: {', '.join(missing_vars)}")
         return
     
-    # Step 1: Scrape SEC filings
-    logging.info("Starting SEC filings scraping...")
-    try:
-     #   scrape_tesla_sec_filings()
-        logging.info("SEC filings scraping completed!")
-    except Exception as e:
-        logging.error(f"Error during scraping: {str(e)}")
+    # Create ES client once
+    es_client = create_es_client()
+    if not es_client:
+        logging.error("Failed to create Elasticsearch client")
         return
         
-    # Step 2: Process documents and create embeddings
-    logging.info("Starting document processing and embedding generation...")
     try:
-        process_and_store_documents()
-        logging.info("Document processing and embedding generation completed!")
-    except Exception as e:
-        logging.error(f"Error during document processing: {str(e)}")
-        return
-    
-    # Step 3: Ingest embeddings into Elasticsearch
-    logging.info("Starting Elasticsearch ingestion...")
-    try:
-        ingest_embeddings()
+        # Step 1: Scrape SEC filings
+        logging.info("Starting SEC filings scraping...")
+        #scrape_tesla_sec_filings()
+        logging.info("SEC filings scraping completed!")
+        
+        # Step 2: Process documents and create embeddings
+        logging.info("Starting document processing...")
+        #process_and_store_documents()
+        logging.info("Document processing completed!")
+        
+        # Step 3: Ingest embeddings into Elasticsearch
+        logging.info("Starting Elasticsearch ingestion...")
+        ingestor = ElasticsearchIngestor(es_client)
+        #ingestor.ingest_embeddings()
         logging.info("Elasticsearch ingestion completed!")
+        
+        # Step 4: Initialize search engine
+        search_engine = SearchEngine(es_client)
+        
+        # Step 5: Interactive search loop
+        print("\nTesla SEC Filings Search")
+        print("Enter 'quit' to exit")
+        
+        while True:
+            query = input("\nEnter your query: ").strip()
+            
+            if query.lower() == 'quit':
+                break
+                
+            if not query:
+                continue
+                
+            print("\nSearching...")
+            results = search_engine.search(query)
+            
+            if not results:
+                print("No results found.")
+                continue
+                
+            print("\nTop results:")
+            print("-" * 80)
+            
+            for i, result in enumerate(results, 1):
+                print(f"\n{i}. Score: {result['score']:.4f}")
+                print(f"File: {result['file_name']}")
+                print(f"Chunk: {result['chunk_index']}")
+                print("-" * 40)
+                print(result['content'])
+                print("-" * 80)
+                
     except Exception as e:
-        logging.error(f"Error during Elasticsearch ingestion: {str(e)}")
+        logging.error(f"Pipeline error: {str(e)}")
+    finally:
+        es_client.close()
 
 if __name__ == "__main__":
     main()
