@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 from scrape import scrape_tesla_sec_filings
 from embeddings import process_and_store_documents
-from elastic_ingest import ingest_embeddings, create_es_client, ElasticsearchIngestor
+from elastic_ingest import ElasticsearchIngestor, create_es_client
 from search import SearchEngine
 import logging
 
@@ -39,7 +39,7 @@ def main():
         
         # Step 2: Process documents and create embeddings
         logging.info("Starting document processing...")
-        #process_and_store_documents()
+        #rocess_and_store_documents()
         logging.info("Document processing completed!")
         
         # Step 3: Ingest embeddings into Elasticsearch
@@ -65,22 +65,29 @@ def main():
                 continue
                 
             print("\nSearching...")
-            results = search_engine.search(query)
+            search_results = search_engine.search(query)
             
-            if not results:
+            if not search_results['vector_results']:
                 print("No results found.")
                 continue
-                
-            print("\nTop results:")
-            print("-" * 80)
             
-            for i, result in enumerate(results, 1):
+            # First show initial vector search results
+            print("\nInitial Vector Search Results:")
+            print("=" * 80)
+            for i, result in enumerate(search_results['vector_results'], 1):
                 print(f"\n{i}. Score: {result['score']:.4f}")
                 print(f"File: {result['file_name']}")
                 print(f"Chunk: {result['chunk_index']}")
                 print("-" * 40)
                 print(result['content'])
                 print("-" * 80)
+            
+            # Then display LLM reranked analysis
+            if search_results['llm_analysis']:
+                print("\nLLM Reranked Analysis:")
+                print("=" * 80)
+                print(search_results['llm_analysis'])
+                print("=" * 80)
                 
     except Exception as e:
         logging.error(f"Pipeline error: {str(e)}")
