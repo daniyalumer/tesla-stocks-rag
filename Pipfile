@@ -12,6 +12,7 @@ elasticsearch = "*"
 huggingface-hub = "*"
 numpy = "*"
 tenacity = "*"
+flask = "*"
 
 [dev-packages]
 

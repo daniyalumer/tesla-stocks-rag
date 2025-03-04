@@ -1,6 +1,6 @@
 # Tesla SEC Filings RAG System
 
-A Retrieval Augmented Generation (RAG) system for Tesla's SEC filings, combining vector search with LLM-powered analysis.
+A Retrieval Augmented Generation (RAG) system for Tesla's SEC filings, combining vector search with LLM-powered analysis. Provides both CLI and REST API interfaces.
 
 ## Project Overview
 
@@ -43,13 +43,14 @@ ELASTIC_API_KEY=your_elasticsearch_api_key
 
 ```plaintext
 tesla-stock-rag/
-├── ingest_pipeline.py         # Data ingestion pipeline
-├── main.py                    # Search interface
-├── scrape.py                 # SEC filings downloader
-├── embeddings.py             # PDF processing and embeddings
-├── search.py                 # Search engine implementation
-├── elastic_ingest.py         # Elasticsearch operations
-├── tesla_sec_filings/        # Downloaded PDF files
+├── api.py                    # REST API interface
+├── ingest_pipeline.py        # Data ingestion pipeline
+├── main.py                   # CLI search interface
+├── scrape.py                # SEC filings downloader
+├── embeddings.py            # PDF processing and embeddings
+├── search.py                # Search engine implementation
+├── elastic_ingest.py        # Elasticsearch operations
+├── tesla_sec_filings/       # Downloaded PDF files
 └── tesla_sec_filings_embeddings/ # Generated embeddings
 ```
 
@@ -64,7 +65,7 @@ tesla-stock-rag/
 ### Search Capabilities
 - **Semantic Search**: Vector similarity using cosine distance
 - **LLM Analysis**: Mixtral-8x7B powered result reranking
-- **Interactive CLI**: User-friendly search interface
+- **Dual Interfaces**: CLI and REST API
 
 ### Architecture
 - **Modular Design**: Separate components for each function
@@ -81,10 +82,64 @@ pipenv shell
 python ingest_pipeline.py
 ```
 
-### Interactive Search
-After ingestion, run the search interface:
+### CLI Search Interface
+Run the interactive command-line interface:
 ```bash
 python main.py
+```
+
+### REST API
+Start the API server:
+```bash
+python api.py
+```
+
+#### API Endpoints
+
+**Search Endpoint**
+- URL: `/search`
+- Method: `POST`
+- Request Body:
+```json
+{
+    "query": "What were Tesla's revenues in 2024?"
+}
+```
+- Response Format:
+```json
+{
+    "vector_results": [
+        {
+            "score": 0.8207,
+            "file_name": "tsla-20241231.pdf",
+            "chunk_index": 342,
+            "content": "...",
+        }
+    ],
+    "llm_analysis": "..."
+}
+```
+
+#### Example API Usage
+
+Using curl:
+```bash
+curl -X POST \
+  http://localhost:5000/search \
+  -H 'Content-Type: application/json' \
+  -d '{"query": "What were Tesla'\''s total revenues in 2024?"}'
+```
+
+Using Python:
+```python
+import requests
+
+response = requests.post(
+    'http://localhost:5000/search',
+    json={'query': 'What were Tesla\'s total revenues in 2024?'}
+)
+results = response.json()
+print(results['llm_analysis'])
 ```
 
 ### Component-wise Execution
@@ -108,6 +163,7 @@ python elastic_ingest.py # Ingest into Elasticsearch
 - **Storage**: 
   - Embeddings: Local JSON files
   - Search Index: Elasticsearch
+- **API Port**: 5000 (default)
 
 ### Error Handling
 - API failure retries
@@ -120,7 +176,7 @@ python elastic_ingest.py # Ingest into Elasticsearch
 
 ### Adding Features
 1. Create new module
-2. Update pipeline or search interface
+2. Update pipeline or interfaces
 3. Add environment variables if needed
 
 ### Testing
