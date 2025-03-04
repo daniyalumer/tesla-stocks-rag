@@ -1,8 +1,6 @@
 import os
 from dotenv import load_dotenv
-from scrape import scrape_tesla_sec_filings
-from embeddings import process_and_store_documents
-from elastic_ingest import ElasticsearchIngestor, create_es_client
+from elastic_ingest import create_es_client
 from search import SearchEngine
 import logging
 
@@ -12,8 +10,8 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
-def main():
-    """Main function to run the entire pipeline"""
+def run_search_interface():
+    """Run the interactive search interface"""
     # Load environment variables
     load_dotenv()
     
@@ -25,33 +23,17 @@ def main():
         logging.error(f"Missing required environment variables: {', '.join(missing_vars)}")
         return
     
-    # Create ES client once
+    # Create ES client
     es_client = create_es_client()
     if not es_client:
         logging.error("Failed to create Elasticsearch client")
         return
         
     try:
-        # Step 1: Scrape SEC filings
-        logging.info("Starting SEC filings scraping...")
-        #scrape_tesla_sec_filings()
-        logging.info("SEC filings scraping completed!")
-        
-        # Step 2: Process documents and create embeddings
-        logging.info("Starting document processing...")
-        #rocess_and_store_documents()
-        logging.info("Document processing completed!")
-        
-        # Step 3: Ingest embeddings into Elasticsearch
-        logging.info("Starting Elasticsearch ingestion...")
-        ingestor = ElasticsearchIngestor(es_client)
-        #ingestor.ingest_embeddings()
-        logging.info("Elasticsearch ingestion completed!")
-        
-        # Step 4: Initialize search engine
+        # Initialize search engine
         search_engine = SearchEngine(es_client)
         
-        # Step 5: Interactive search loop
+        # Interactive search loop
         print("\nTesla SEC Filings Search")
         print("Enter 'quit' to exit")
         
@@ -95,4 +77,4 @@ def main():
         es_client.close()
 
 if __name__ == "__main__":
-    main()
+    run_search_interface()
