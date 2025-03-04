@@ -1,22 +1,23 @@
 # Tesla SEC Filings RAG System
 
-A Retrieval Augmented Generation (RAG) system that processes Tesla's SEC filings using embeddings and Elasticsearch for advanced search and analysis capabilities.
+A Retrieval Augmented Generation (RAG) system for Tesla's SEC filings, combining vector search with LLM-powered analysis.
 
 ## Project Overview
 
-This project creates a searchable database of Tesla's SEC filings by:
-1. Downloading SEC filings from Tesla's investor relations website
-2. Processing PDFs into text chunks
-3. Generating embeddings using HuggingFace's Inference API
-4. Storing both raw text and embeddings in Elasticsearch
+This project creates an intelligent search system for Tesla's SEC filings through:
+1. SEC filings download from Tesla's investor relations website
+2. PDF processing and text chunking
+3. Local embedding generation using sentence-transformers
+4. Vector storage in Elasticsearch
+5. Semantic search with LLM-powered result analysis
 
 ## Setup
 
 ### Prerequisites
-- Python 3.8+
+- Python 3.12+
 - Pipenv
 - Elasticsearch instance
-- HuggingFace API token
+- HuggingFace API token (for LLM inference)
 
 ### Installation
 
@@ -31,7 +32,7 @@ cd tesla-stock-rag
 pipenv install
 ```
 
-3. Create `.env` file with required credentials:
+3. Create `.env` file:
 ```plaintext
 HF_TOKEN=your_huggingface_token
 ELASTIC_ENDPOINT=your_elasticsearch_endpoint
@@ -40,87 +41,108 @@ ELASTIC_API_KEY=your_elasticsearch_api_key
 
 ## Project Structure
 
-```
+```plaintext
 tesla-stock-rag/
-├── main.py              # Main pipeline orchestration
-├── scrape.py           # SEC filings downloader
-├── embeddings.py       # PDF processing and embedding generation
-├── elastic_ingest.py   # Elasticsearch ingestion
-├── tesla_sec_filings/  # Downloaded PDF files
-└── tesla_sec_filings_embeddings/  # Generated embeddings
+├── ingest_pipeline.py         # Data ingestion pipeline
+├── main.py                    # Search interface
+├── scrape.py                 # SEC filings downloader
+├── embeddings.py             # PDF processing and embeddings
+├── search.py                 # Search engine implementation
+├── elastic_ingest.py         # Elasticsearch operations
+├── tesla_sec_filings/        # Downloaded PDF files
+└── tesla_sec_filings_embeddings/ # Generated embeddings
 ```
 
 ## Features
 
-- **PDF Processing**: Uses PyPDF2 for reliable text extraction
-- **Text Chunking**: Intelligent text splitting for optimal processing
-- **Embedding Generation**: Uses sentence-transformers model via HuggingFace API
-- **Error Handling**: Comprehensive retry logic and error reporting
-- **Progress Tracking**: Real-time processing status with tqdm
-- **Modular Design**: Separate modules for scraping, processing, and storage
+### Data Processing Pipeline
+- **PDF Processing**: PyPDF2 for text extraction
+- **Text Chunking**: Smart text splitting with configurable size
+- **Embedding Generation**: Local processing using sentence-transformers
+- **Vector Storage**: Elasticsearch with dense vector support
+
+### Search Capabilities
+- **Semantic Search**: Vector similarity using cosine distance
+- **LLM Analysis**: Mixtral-8x7B powered result reranking
+- **Interactive CLI**: User-friendly search interface
+
+### Architecture
+- **Modular Design**: Separate components for each function
+- **Dependency Injection**: Efficient resource management
+- **Error Handling**: Comprehensive retry logic
+- **Progress Tracking**: Real-time status updates
 
 ## Usage
 
-1. Activate the virtual environment:
+### Data Ingestion
+First-time setup to process and store documents:
 ```bash
 pipenv shell
+python ingest_pipeline.py
 ```
 
-2. Run the complete pipeline:
+### Interactive Search
+After ingestion, run the search interface:
 ```bash
 python main.py
 ```
 
-Or run individual components:
+### Component-wise Execution
+Run individual components as needed:
 ```bash
-python scrape.py        # Only download SEC filings
-python embeddings.py    # Only process PDFs and generate embeddings
-python elastic_ingest.py # Only ingest into Elasticsearch
+python scrape.py         # Download SEC filings
+python embeddings.py     # Generate embeddings
+python elastic_ingest.py # Ingest into Elasticsearch
 ```
 
-## Configuration
+## Technical Details
 
-### Embedding Model
-- Model: `sentence-transformers/all-MiniLM-L6-v2`
-- Dimensions: 384
-- Optimized for: Semantic search and similarity matching
+### Models
+- **Embedding Model**: `all-MiniLM-L6-v2` (384 dimensions)
+- **LLM Model**: `mistralai/Mixtral-8x7B-Instruct-v0.1`
+- **Search Results**: Top 5 similar documents with analysis
 
-### Chunking Parameters
-- Default chunk size: 1000 characters
-- Adjustable via `chunk_size` parameter in `create_chunks()`
+### Configuration
+- **Chunk Size**: 1000 characters (adjustable)
+- **File Types**: PDF documents
+- **Storage**: 
+  - Embeddings: Local JSON files
+  - Search Index: Elasticsearch
 
-## Error Handling
-
-The system includes:
-- Automatic retries for API failures
-- Detailed error logging
-- Progress preservation (skip already processed files)
-- Input validation and error reporting
+### Error Handling
+- API failure retries
+- Detailed logging
+- Progress preservation
+- Resource cleanup
+- Input validation
 
 ## Development
 
-### Adding New Features
-
-1. Create a new module for your feature
-2. Update `main.py` to include your module
-3. Add any new environment variables to `.env`
+### Adding Features
+1. Create new module
+2. Update pipeline or search interface
+3. Add environment variables if needed
 
 ### Testing
-
-Run tests with:
+Run the test suite:
 ```bash
 python -m pytest
 ```
 
+### Code Style
+- Type hints
+- Docstrings
+- PEP 8 compliance
+- Comprehensive error handling
+
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+1. Fork repository
+2. Create feature branch
+3. Implement changes
+4. Add tests
+5. Submit pull request
 
 ## License
 
-MIT License - see LICENSE file for details
-
+MIT License - See LICENSE file
